@@ -1,5 +1,4 @@
 import requests
-from pprint import pprint
 import json
 
 class User:
@@ -41,7 +40,6 @@ class User:
         max_size_photos = []
         for photo in list_of_photos:
             max_size_photos.append({'url': photo['sizes'][-1]['url'], 'likes_count': photo['likes']['count'], 'date': photo['date'], 'size_type': photo['sizes'][-1]['type']})
-        pprint(max_size_photos)
         return max_size_photos
 
     def get_photos_names(self, list_of_photos):
@@ -65,10 +63,18 @@ class User:
         result = requests.put(url, headers=self.yd_headers, params=params)
         return folder_name
 
+    def write_log(self, log):
+        """
+        Записывает лог в json файл
+        """
+        with open('log.json', 'a') as file:
+            json.dump(log, file, indent=2)
+
     def upload(self):
         """
-        Загрузка фотографий на Yandex Disk
+        Загружает фотографии на Yandex Disk
         """
+        log = []
         all_photos = self.get_list_photos()
         folder_name = self.create_folder()
         max_size_photos = self.get_max_size_photos(all_photos)
@@ -80,9 +86,13 @@ class User:
             url = "https://cloud-api.yandex.net:443/v1/disk/resources/upload"
             params = {'path': folder_name + '/' + photo_names[number], 'url': photos_url[number]}
             r = requests.post(url, headers=self.yd_headers, params=params)
+            log.append({"file_name": photo_names[number], "size": photos_size[number]})
             number += 1
+        result = self.write_log(log)
 
 with open('VK_token.txt') as file_object:
-        vk_token = file_object.read().strip()
+    vk_token = file_object.read().strip()
 list_photo = User(vk_token, 'token', vk_id)
-s = list_photo.upload()
+result = list_photo.upload()
+
+
